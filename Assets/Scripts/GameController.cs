@@ -89,7 +89,6 @@ public class GameController : MonoBehaviour
         }
         return selectedAction;
     }
-
 }
 
 
@@ -182,7 +181,6 @@ public class GameField
             displayPixels[pixel.x, pixel.y] = (int)pixel.gamePiece;
         }
     }
-
 
     private bool CanMoveDown()
     {
@@ -444,7 +442,6 @@ public class GameField
     {
         currentPiecePixels = new List<Pixel>();
 
-        //switch(piece)
         switch (piece)
         {
             case GamePiece.longI:
