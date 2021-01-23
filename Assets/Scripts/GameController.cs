@@ -625,8 +625,10 @@ public class GameField
     {
         List<Pixel> bufferList = new List<Pixel>();
 
-        GamePiece piece = currentPiecePixels[0].gamePiece;
+        List<Pixel> oldPiecePosition = new List<Pixel>(currentPiecePixels);
+        Pixel oldRotationPoint = rotationPoint;
 
+        GamePiece piece = currentPiecePixels[0].gamePiece;
         if (piece == GamePiece.square)
         {
             // Piece does not change on rotation
@@ -637,55 +639,35 @@ public class GameField
             if (AllAboveRotationPoint(currentPiecePixels))
             {
                 // 3
-                List<Pixel> pixelList = new List<Pixel>();
-                pixelList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 2, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y - 1, GamePiece.longI));
-                currentPiecePixels = pixelList;
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 2, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y - 1, GamePiece.longI));
             }
             else if (AllRightOfRotationPoint(currentPiecePixels))
             {
                 // 4
-                List<Pixel> pixelList = new List<Pixel>();
-                pixelList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y, GamePiece.longI));
-                currentPiecePixels = pixelList;
+                bufferList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y, GamePiece.longI));
             }
             else if (TwoAreAboveOfRotationPoint(currentPiecePixels))
             {
                 // 2
-                List<Pixel> pixelList = new List<Pixel>();
-                pixelList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y + 1, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y + 1, GamePiece.longI));
-                currentPiecePixels = pixelList;
+                bufferList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y + 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y + 1, GamePiece.longI));
             }
             else if (TwoAreRightOfRotationPoint(currentPiecePixels))
             {
                 // 1
-                List<Pixel> pixelList = new List<Pixel>();
-                pixelList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 2, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x, rotationPoint.y - 1, GamePiece.longI));
-                currentPiecePixels = pixelList;
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 2, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y - 1, GamePiece.longI));
             }
-            else
-            {
-                foreach (var pixle in currentPiecePixels)
-                {
-                    Debug.Log(pixle);
-                }
-                Debug.Log("Rotate: " + rotationPoint);
-                throw new Exception("I fucked Up");
-            }
-            BoundryCorrection();
-            CopyToDisplayBuffer();
-            return;
         }
         else
         {
@@ -751,11 +733,18 @@ public class GameField
                     Debug.Log($"Rotation Pixel is {rotationPoint}");
                 }
             }
-            currentPiecePixels = new List<Pixel>(bufferList);
+        }
 
-            BoundryCorrection();
-
+        currentPiecePixels = new List<Pixel>(bufferList);
+        BoundryCorrection();
+        if (!CollisionWithMap(bufferList))
+        {
             CopyToDisplayBuffer();
+        }
+        else
+        {
+            currentPiecePixels = oldPiecePosition;
+            rotationPoint = oldRotationPoint;
         }
     }
 
@@ -766,19 +755,6 @@ public class GameField
         {
             pixel.x += x;
             pixel.y += y;
-        }
-    }
-
-
-    private bool BoundryCheck()
-    {
-        if (RightBoundryOverflow() || LeftBoundryOverflow() || CollisionWithMap())
-        {
-            return false;
-        }
-        else
-        {
-            return true;
         }
     }
 
@@ -831,10 +807,14 @@ public class GameField
         return false;
     }
 
-    private bool CollisionWithMap()
+    private bool CollisionWithMap(List<Pixel> pixelList)
     {
-        foreach (Pixel pixel in currentPiecePixels)
+        foreach (Pixel pixel in pixelList)
         {
+            if (displayPixels[pixel.x, pixel.y] != 0)
+            {
+                return true;
+            }
         }
         return false;
     }
@@ -842,6 +822,9 @@ public class GameField
     private void RotateLeft()
     {
         List<Pixel> bufferList = new List<Pixel>();
+
+        List<Pixel> oldPiecePosition = new List<Pixel>(currentPiecePixels);
+        Pixel oldRotationPoint = rotationPoint;
 
         GamePiece piece = currentPiecePixels[0].gamePiece;
 
@@ -855,44 +838,35 @@ public class GameField
             if (AllAboveRotationPoint(currentPiecePixels))
             {
                 // 1
-                List<Pixel> pixelList = new List<Pixel>();
-                pixelList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 2, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x, rotationPoint.y - 1, GamePiece.longI));
-                currentPiecePixels = pixelList;
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 2, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y - 1, GamePiece.longI));
             }
             else if (AllRightOfRotationPoint(currentPiecePixels))
             {
                 // 2
-                List<Pixel> pixelList = new List<Pixel>();
-                pixelList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y + 1, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y + 1, GamePiece.longI));
-                currentPiecePixels = pixelList;
+                bufferList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y + 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y + 1, GamePiece.longI));
             }
             else if (TwoAreAboveOfRotationPoint(currentPiecePixels))
             {
                 // 4
-                List<Pixel> pixelList = new List<Pixel>();
-                pixelList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y, GamePiece.longI));
-                currentPiecePixels = pixelList;
+                bufferList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y, GamePiece.longI));
             }
             else if (TwoAreRightOfRotationPoint(currentPiecePixels))
             {
                 // 3
-                List<Pixel> pixelList = new List<Pixel>();
-                pixelList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 2, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.longI));
-                pixelList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y - 1, GamePiece.longI));
-                currentPiecePixels = pixelList;
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 2, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y - 1, GamePiece.longI));
             }
-            return;
         }
         else
         {
@@ -958,11 +932,18 @@ public class GameField
                     Debug.Log($"Rotation Pixel is {rotationPoint}");
                 }
             }
-            currentPiecePixels = new List<Pixel>(bufferList);
+        }
 
-            BoundryCorrection();
-
+        currentPiecePixels = new List<Pixel>(bufferList);
+        BoundryCorrection();
+        if (!CollisionWithMap(bufferList))
+        {
             CopyToDisplayBuffer();
+        }
+        else
+        {
+            currentPiecePixels = oldPiecePosition;
+            rotationPoint = oldRotationPoint;
         }
     }
 
