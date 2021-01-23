@@ -52,6 +52,10 @@ public class GameController : MonoBehaviour
             //Update Graphics
             gameField.UpdateDisplay();
         }
+        else
+        {
+            gameField.SetGameOverScreen();
+        }
     }
 
     private PlayerAction ReadPlayerInput()
@@ -1139,6 +1143,18 @@ public class GameField
         else
         {
             return distance;
+        }
+    }
+
+    public void SetGameOverScreen()
+    {
+        Color setColor = Color.black;
+        for (int col = 0; col < 10; col++)
+        {
+            for (int row = 0; row < 20; row++)
+            {
+                pixelController.SetPixel(col, row, setColor);
+            }
         }
     }
 }
