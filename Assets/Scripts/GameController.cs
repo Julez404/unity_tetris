@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System; //random function
@@ -23,12 +23,15 @@ public class GameController : MonoBehaviour
     public PixelController pixelController;
     private float lastTime;
 
+    private float newTime;
+
     // Start is called before the first frame update
     void Start()
     {
         gameField.SetPixelController(pixelController);
         gameField.Init();
-        InvokeRepeating("Cycle", 2.0f, 1.0f);
+        //InvokeRepeating("Cycle", 2.0f, 1.0f);
+        newTime = Time.deltaTime;
     }
 
     // Update is called once per frame
@@ -37,29 +40,15 @@ public class GameController : MonoBehaviour
         PlayerAction playerAction = ReadPlayerInput();
         gameField.HandlePlayerInput(playerAction);
 
-        // if (speedTimer > currentTick)
-        //  {
-        //  }
+        newTime += Time.deltaTime;
+        if (newTime > 1)
+        {
+            newTime = 0;
+            gameField.Push();
+        }
         //Update Graphics
         gameField.UpdateDisplay();
     }
-
-    void Cycle()
-    {
-        Debug.Log("Cycle");
-        this.ingameField.Step();
-    }
-
-    void FixedUpdate()
-    {
-        if ((lastTime - Time.fixedDeltaTime) > 100000000)
-        {
-            lastTime = Time.fixedDeltaTime;
-            Debug.Log("STEP");
-            //gameField.Step();
-        }
-    }
-
 
     private PlayerAction ReadPlayerInput()
     {
@@ -86,6 +75,10 @@ public class GameController : MonoBehaviour
         {
             selectedAction = PlayerAction.rotateLeft;
         }
+        else if (Input.GetKeyDown("e"))
+        {
+            selectedAction = PlayerAction.rotateRight;
+        }
         return selectedAction;
     }
 
@@ -96,6 +89,7 @@ public class GameField
 {
     PixelController pixelController;
 
+    int score = 0;
 
     public void SetPixelController(PixelController controller)
     {
@@ -148,15 +142,27 @@ public class GameField
             this.y = y;
             this.gamePiece = gamePiece;
         }
+
+        public Pixel(Pixel pixel)
+        {
+            this.x = pixel.x;
+            this.y = pixel.y;
+            this.gamePiece = pixel.gamePiece;
+        }
+
+        public override string ToString()
+        {
+            return $"({x}|{y}) --> {gamePiece}";
+        }
     }
 
     int[,] displayPixels = new int[10, 20];
     List<Pixel> currentPiecePixels = new List<Pixel>();
-
+    Pixel rotationPoint;
 
     public void Init()
     {
-        LoadNewPiece(GamePiece.longI);
+        LoadNewPiece(GetRandomPiece());
         CopyToDisplayBuffer();
     }
 
@@ -186,6 +192,13 @@ public class GameField
         return true;
     }
 
+    public void Push()
+    {
+        RemovePixelsFromDisplay(currentPiecePixels);
+        Step();
+        CopyToDisplayBuffer();
+    }
+
 
     public void Step()
     {
@@ -198,6 +211,7 @@ public class GameField
             {
                 pixel.y -= 1;
             }
+            rotationPoint.y -= 1;
         }
         else
         {
@@ -210,10 +224,76 @@ public class GameField
             {
                 //Store position
                 CopyToDisplayBuffer();
+                RemoveCurrentPiece();
+                HandleFullLineDetection();
                 LoadNewPiece(GetRandomPiece());
             }
         }
     }
+
+    private void RemoveCurrentPiece()
+    {
+        currentPiecePixels = new List<Pixel>();
+    }
+
+    private void HandleFullLineDetection()
+    {
+        //Determine Full Lines
+        List<int> fullLines = new List<int>();
+        for (int row = 0; row < 20; row++)
+        {
+            for (int col = 0; col < 10; col++)
+            {
+                if (displayPixels[col, row] == 0)
+                {
+                    break;
+                }
+                if (col == 9)
+                {
+                    fullLines.Add(row);
+                }
+            }
+        }
+
+        //Remove Lines
+        int count = 0;
+        foreach (var toDel in fullLines)
+        {
+            for (int row = toDel - count; row < 20; row++)
+            {
+                for (int col = 0; col < 10; col++)
+                {
+                    if (row != 19)
+                    {
+                        displayPixels[col, row] = displayPixels[col, row + 1];
+                    }
+                    else
+                    {
+                        displayPixels[col, row] = 0;
+                    }
+                }
+            }
+            count++;
+        }
+
+        CopyToDisplayBuffer();
+        //
+
+        AddValueToScore(0);
+
+
+        //1-40
+        //2-100
+        //3-300
+        //4-1200
+        //for(
+    }
+
+    private void AddValueToScore(int linecount)
+    {
+        Debug.Log("Score calculation not impemented!");
+    }
+
 
     private void RemovePixelsFromDisplay(List<Pixel> pixels)
     {
@@ -260,11 +340,7 @@ public class GameField
 
     public void HandlePlayerInput(PlayerAction action)
     {
-        Debug.Log($"HandlePlayerInput: {action}");
-        if (!MovementAllowed(action))
-        {
-            return;
-        }
+        //Debug.Log($"HandlePlayerInput: {action}");
 
         RemovePixelsFromDisplay(currentPiecePixels);
 
@@ -281,6 +357,7 @@ public class GameField
                         Debug.Log("Move left");
                         pixel.x -= 1;
                     }
+                    rotationPoint.x = rotationPoint.x - 1;
                 }
                 break;
             case PlayerAction.moveRight:
@@ -291,14 +368,17 @@ public class GameField
                         Debug.Log("Move right");
                         pixel.x = pixel.x + 1;
                     }
+                    rotationPoint.x = rotationPoint.x + 1;
                 }
                 break;
             case PlayerAction.rotateLeft:
-                Step();
-                Debug.Log("Rotation needs to be implemented!");
+                RotateLeft();
                 break;
             case PlayerAction.rotateRight:
-                Debug.Log("Rotation needs to be implemented!");
+                RotateRight();
+                break;
+            case PlayerAction.drop:
+                Drop();
                 break;
             default:
                 break;
@@ -309,10 +389,12 @@ public class GameField
 
     private GamePiece GetRandomPiece()
     {
-        int randomIndex = random.Next(0, 8);
+        int randomIndex = random.Next(1, 8);
         GamePiece newPiece = (GamePiece)randomIndex;
+        Debug.Log($"New Piece is {newPiece}");
         return newPiece;
     }
+
 
     private void LoadNewPiece(GamePiece piece)
     {
@@ -326,6 +408,7 @@ public class GameField
                 currentPiecePixels.Add(new Pixel(5, 18, piece));
                 currentPiecePixels.Add(new Pixel(5, 17, piece));
                 currentPiecePixels.Add(new Pixel(5, 16, piece));
+                rotationPoint = new Pixel(5, 18);
                 break;
             case GamePiece.square:
                 currentPiecePixels.Add(new Pixel(5, 19, piece));
@@ -338,30 +421,35 @@ public class GameField
                 currentPiecePixels.Add(new Pixel(4, 18, piece));
                 currentPiecePixels.Add(new Pixel(5, 18, piece));
                 currentPiecePixels.Add(new Pixel(6, 18, piece));
+                rotationPoint = new Pixel(5, 19);
                 break;
             case GamePiece.l:
                 currentPiecePixels.Add(new Pixel(5, 19, piece));
                 currentPiecePixels.Add(new Pixel(5, 18, piece));
                 currentPiecePixels.Add(new Pixel(5, 17, piece));
                 currentPiecePixels.Add(new Pixel(6, 17, piece));
+                rotationPoint = new Pixel(5, 18);
                 break;
             case GamePiece.mirroredL:
                 currentPiecePixels.Add(new Pixel(5, 19, piece));
                 currentPiecePixels.Add(new Pixel(5, 18, piece));
                 currentPiecePixels.Add(new Pixel(5, 17, piece));
                 currentPiecePixels.Add(new Pixel(4, 17, piece));
+                rotationPoint = new Pixel(5, 18);
                 break;
             case GamePiece.s:
                 currentPiecePixels.Add(new Pixel(5, 19, piece));
                 currentPiecePixels.Add(new Pixel(6, 19, piece));
                 currentPiecePixels.Add(new Pixel(5, 18, piece));
                 currentPiecePixels.Add(new Pixel(4, 18, piece));
+                rotationPoint = new Pixel(5, 18);
                 break;
             case GamePiece.mirroredS:
                 currentPiecePixels.Add(new Pixel(4, 19, piece));
                 currentPiecePixels.Add(new Pixel(5, 19, piece));
                 currentPiecePixels.Add(new Pixel(5, 18, piece));
                 currentPiecePixels.Add(new Pixel(6, 18, piece));
+                rotationPoint = new Pixel(5, 18);
                 break;
             default:
                 break;
@@ -402,8 +490,462 @@ public class GameField
                 return Color.green;
             case GamePiece.s:
                 return Color.red;
+            case GamePiece.square:
+                return Color.yellow;
             default:
                 return Color.white;
+        }
+    }
+
+
+    private void RotateRight()
+    {
+        List<Pixel> bufferList = new List<Pixel>();
+
+        GamePiece piece = currentPiecePixels[0].gamePiece;
+
+        if (piece == GamePiece.square)
+        {
+            // Piece does not change on rotation
+            return;
+        }
+        else if (piece == GamePiece.longI)
+        {
+            Debug.Log("Long I Rotation need to be implemented!");
+            return;
+        }
+        else
+        {
+            //Direct Neighbours
+            //rotationPoint
+            foreach (Pixel pixel in currentPiecePixels)
+            {
+                //Left to Up
+                if (IsHorizontalToRotationPoint(pixel) && IsLeftFromRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(1, 1, pixel));
+                }
+
+                //Up to Right
+                else if (IsVerticalToRotationPoint(pixel) && IsAboveRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(1, -1, pixel));
+                }
+
+                //Right to Down
+                else if (IsHorizontalToRotationPoint(pixel) && IsRightRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(-1, -1, pixel));
+                }
+
+                //Down To Left
+                else if (IsVerticalToRotationPoint(pixel) && IsBelowRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(-1, 1, pixel));
+                }
+
+                //TopLeft To TopRight
+                else if (IsAboveRotationPoint(pixel) && IsLeftFromRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(2, 0, pixel));
+                }
+
+                //TopRight to BottomRight
+                else if (IsAboveRotationPoint(pixel) && IsRightRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(0, -2, pixel));
+                }
+
+                //BottomRight to BottomLeft
+                else if (IsBelowRotationPoint(pixel) && IsRightRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(-2, 0, pixel));
+                }
+
+                //BottomLeft to TopLeft
+                else if (IsBelowRotationPoint(pixel) && IsLeftFromRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(0, 2, pixel));
+                }
+
+                else if (IsSamePositionAsRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(0, 0, pixel));
+                }
+                else
+                {
+                    Debug.Log($"No condition for {pixel}");
+                    Debug.Log($"Rotation Pixel is {rotationPoint}");
+                }
+            }
+            currentPiecePixels = new List<Pixel>(bufferList);
+
+            BoundryCorrection();
+
+            CopyToDisplayBuffer();
+        }
+    }
+
+
+    private void TransformPixelList(int x, int y, List<Pixel> pixelList)
+    {
+        foreach (var pixel in pixelList)
+        {
+            pixel.x += x;
+            pixel.y += y;
+        }
+    }
+
+
+    private bool BoundryCheck()
+    {
+        if (RightBoundryOverflow() || LeftBoundryOverflow() || CollisionWithMap())
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    private bool RightBoundryOverflow()
+    {
+        foreach (Pixel pixel in currentPiecePixels)
+        {
+            Debug.Log($"{pixel}");
+            if (pixel.x > 9)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool LeftBoundryOverflow()
+    {
+        foreach (Pixel pixel in currentPiecePixels)
+        {
+            if (pixel.x < 0)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool UpperBoundryOverflow()
+    {
+        foreach (Pixel pixel in currentPiecePixels)
+        {
+            if (pixel.y > 19)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool BottomBoundryOverflow()
+    {
+        foreach (Pixel pixel in currentPiecePixels)
+        {
+            if (pixel.y < 0)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool CollisionWithMap()
+    {
+        foreach (Pixel pixel in currentPiecePixels)
+        {
+        }
+        return false;
+    }
+
+    private void RotateLeft()
+    {
+        List<Pixel> bufferList = new List<Pixel>();
+
+        GamePiece piece = currentPiecePixels[0].gamePiece;
+
+        if (piece == GamePiece.square)
+        {
+            // Piece does not change on rotation
+            return;
+        }
+        else if (piece == GamePiece.longI)
+        {
+            Debug.Log("Long I Rotation need to be implemented!");
+            return;
+        }
+        else
+        {
+            //Direct Neighbours
+            //rotationPoint
+            foreach (Pixel pixel in currentPiecePixels)
+            {
+                //Left to Down
+                if (IsHorizontalToRotationPoint(pixel) && IsLeftFromRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(1, -1, pixel));
+                }
+
+                //Down to Right
+                else if (IsVerticalToRotationPoint(pixel) && IsBelowRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(1, 1, pixel));
+                }
+
+                //Right to Up
+                else if (IsHorizontalToRotationPoint(pixel) && IsRightRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(-1, 1, pixel));
+                }
+
+                //Up to Left
+                else if (IsVerticalToRotationPoint(pixel) && IsAboveRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(-1, -1, pixel));
+                }
+
+                //TopLeft To BottomLeft
+                else if (IsAboveRotationPoint(pixel) && IsLeftFromRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(0, -2, pixel));
+                }
+
+                //BottomLeft to BottomRight
+                else if (IsBelowRotationPoint(pixel) && IsLeftFromRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(2, 0, pixel));
+                }
+
+                //BottomRight to TopRight
+                else if (IsBelowRotationPoint(pixel) && IsRightRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(0, 2, pixel));
+                }
+
+                //TopRight to TopLeft
+                else if (IsAboveRotationPoint(pixel) && IsRightRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(-2, 0, pixel));
+                }
+
+                else if (IsSamePositionAsRotationPoint(pixel))
+                {
+                    bufferList.Add(TransformPixel(0, 0, pixel));
+                }
+                else
+                {
+                    Debug.Log($"No condition for {pixel}");
+                    Debug.Log($"Rotation Pixel is {rotationPoint}");
+                }
+            }
+            currentPiecePixels = new List<Pixel>(bufferList);
+
+            BoundryCorrection();
+
+            CopyToDisplayBuffer();
+        }
+    }
+
+    private void BoundryCorrection()
+    {
+        Debug.Log("Validate new Position");
+        if (RightBoundryOverflow())
+        {
+            Debug.Log("Right Boundry Overflow");
+            TransformPixelList(-1, 0, currentPiecePixels);
+            rotationPoint.x -= 1;
+        }
+        else if (LeftBoundryOverflow())
+        {
+            Debug.Log("Left Boundry Overflow");
+            TransformPixelList(1, 0, currentPiecePixels);
+            rotationPoint.x += 1;
+        }
+        else if (UpperBoundryOverflow())
+        {
+            Debug.Log("Upper Boundry Overflow");
+            TransformPixelList(0, -1, currentPiecePixels);
+            rotationPoint.y -= 1;
+        }
+        else if (BottomBoundryOverflow())
+        {
+            Debug.Log("Bottom Boundry Overflow");
+            TransformPixelList(0, 1, currentPiecePixels);
+            rotationPoint.y += 1;
+        }
+        Debug.Log("Check Done");
+    }
+
+    /// Return new Pixel based on given X/Y Offset
+    private Pixel TransformPixel(int x, int y, Pixel pixel)
+    {
+        return new Pixel(pixel.x + x, pixel.y + y, pixel.gamePiece);
+    }
+
+    private bool IsHorizontalToRotationPoint(Pixel pixel)
+    {
+        if (pixel.y == rotationPoint.y)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private bool IsVerticalToRotationPoint(Pixel pixel)
+    {
+        if (pixel.x == rotationPoint.x)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private bool IsAboveRotationPoint(Pixel pixel)
+    {
+        if (pixel.y > rotationPoint.y)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private bool IsBelowRotationPoint(Pixel pixel)
+    {
+        if (pixel.y < rotationPoint.y)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private bool IsLeftFromRotationPoint(Pixel pixel)
+    {
+        if (pixel.x < rotationPoint.x)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private bool IsRightRotationPoint(Pixel pixel)
+    {
+        if (pixel.x > rotationPoint.x)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private bool IsSamePositionAsRotationPoint(Pixel pixel)
+    {
+        if (pixel.x == rotationPoint.x && pixel.y == rotationPoint.y)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private void Drop()
+    {
+        List<Pixel> bottomPixels = GetGroundFacingPixels(currentPiecePixels);
+        int distanceToGroundPiece = GetSmallestDistanceToGround(bottomPixels);
+
+        RemovePixelsFromDisplay(currentPiecePixels);
+        TransformPixelList(0, -distanceToGroundPiece, currentPiecePixels);
+        rotationPoint.y -= distanceToGroundPiece;
+        CopyToDisplayBuffer();
+        Step();
+    }
+
+    private List<Pixel> GetGroundFacingPixels(List<Pixel> pixelList)
+    {
+        Dictionary<int, int> usedColumns = new Dictionary<int, int>();
+
+        //Get used Columns
+        foreach (Pixel pixel in pixelList)
+        {
+            if (usedColumns.ContainsKey(pixel.x))
+            {
+                if (usedColumns[pixel.x] > pixel.y)
+                {
+                    usedColumns[pixel.x] = pixel.y;
+                }
+            }
+            else
+            {
+                usedColumns.Add(pixel.x, pixel.y);
+            }
+        }
+
+        List<Pixel> returnList = new List<Pixel>();
+        foreach (var entry in usedColumns)
+        {
+            returnList.Add(new Pixel(entry.Key, entry.Value));
+        }
+        return returnList;
+    }
+
+
+    private int GetSmallestDistanceToGround(List<Pixel> pixelList)
+    {
+        int distance = 20;
+        foreach (Pixel pixel in pixelList)
+        {
+            int pixelDistance = 0;
+            for (int row = pixel.y - 1; row >= 0; row--)
+            {
+                if (displayPixels[pixel.x, row] == 0)
+                {
+                    pixelDistance++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            if (pixelDistance < distance)
+            {
+                distance = pixelDistance;
+            }
+        }
+
+        if (distance == 20)
+        {
+            return 0;
+        }
+        else
+        {
+            return distance;
         }
     }
 }
