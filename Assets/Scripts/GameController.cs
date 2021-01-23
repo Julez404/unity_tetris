@@ -311,21 +311,31 @@ public class GameField
         }
 
         CopyToDisplayBuffer();
-        //
 
-        AddValueToScore(0);
-
-
-        //1-40
-        //2-100
-        //3-300
-        //4-1200
-        //for(
+        //Add score
+        switch (fullLines.Count)
+        {
+            case 1:
+                AddValueToScore(40);
+                break;
+            case 2:
+                AddValueToScore(100);
+                break;
+            case 3:
+                AddValueToScore(300);
+                break;
+            case 4:
+                AddValueToScore(1200);
+                break;
+            default:
+                break;
+        }
     }
 
     private void AddValueToScore(int linecount)
     {
         Debug.Log("Score calculation not impemented!");
+        score += linecount;
     }
 
 
