@@ -85,6 +85,7 @@ public class GameController : MonoBehaviour
                 gameField.Push();
             }
 
+            gameField.CalculatePreviewPixels();
             gameField.UpdateDisplay();
             lastPlayerAction = currentPlayerAction;
         }
@@ -236,6 +237,8 @@ public class GameField
 
     int[,] displayPixels = new int[10, 25];
     List<Pixel> currentPiecePixels = new List<Pixel>();
+    List<Pixel> currentPiecePreview = new List<Pixel>();
+
     Pixel rotationPoint;
     public bool isGameOver = false;
 
@@ -260,10 +263,12 @@ public class GameField
             //Negative Check
             if (pixel.y == 0)
             {
+                Debug.Log($"Pixel {pixel} not moveable!");
                 return false;
             }
             if (displayPixels[pixel.x, pixel.y - 1] != 0)
             {
+                Debug.Log($"Pixel {pixel} not moveable!");
                 return false;
             }
         }
@@ -276,7 +281,6 @@ public class GameField
         Step();
         CopyToDisplayBuffer();
     }
-
 
     public void Step()
     {
@@ -315,6 +319,7 @@ public class GameField
         {
             if (pixel.y > 19)
             {
+                Debug.Log($"Pixel {pixel} calls Game Over");
                 return true;
             }
         }
@@ -594,11 +599,31 @@ public class GameField
 
     public void UpdateDisplay()
     {
+
         for (int col = 0; col < 10; col++)
         {
             for (int row = 0; row < 20; row++)
             {
-                pixelController.SetPixel(col, row, GetColorByPiece((GamePiece)displayPixels[col, row]));
+                bool overwrite = false;
+                Pixel overwrite_pixel = new Pixel(0, 0);
+                foreach (Pixel pixel in currentPiecePreview)
+                {
+                    if (pixel.x == col && pixel.y == row)
+                    {
+                        overwrite_pixel = pixel;
+                        overwrite = true;
+                    }
+                }
+                if (overwrite && (displayPixels[col, row] == 0))
+                {
+                    Color color = GetColorByPiece(overwrite_pixel.gamePiece);
+                    color.a = 0.4f;
+                    pixelController.SetPixel(col, row, color);
+                }
+                else
+                {
+                    pixelController.SetPixel(col, row, GetColorByPiece((GamePiece)displayPixels[col, row]));
+                }
             }
         }
     }
@@ -1228,5 +1253,17 @@ public class GameField
                 pixelController.SetPixel(col, row, setColor);
             }
         }
+    }
+
+    public void CalculatePreviewPixels()
+    {
+        currentPiecePreview = new List<Pixel>();
+        foreach(Pixel pixel in currentPiecePixels)
+        {
+            currentPiecePreview.Add(new Pixel(pixel));
+        }
+        List<Pixel> bottomPixels = GetGroundFacingPixels(currentPiecePixels);
+        int distance = GetSmallestDistanceToGround(bottomPixels);
+        TransformPixelList(0, -distance, currentPiecePreview);
     }
 }
