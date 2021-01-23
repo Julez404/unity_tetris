@@ -37,17 +37,21 @@ public class GameController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        PlayerAction playerAction = ReadPlayerInput();
-        gameField.HandlePlayerInput(playerAction);
-
-        newTime += Time.deltaTime;
-        if (newTime > 1)
+        if (!gameField.isGameOver)
         {
-            newTime = 0;
-            gameField.Push();
+
+            PlayerAction playerAction = ReadPlayerInput();
+            gameField.HandlePlayerInput(playerAction);
+
+            newTime += Time.deltaTime;
+            if (newTime > 1)
+            {
+                newTime = 0;
+                gameField.Push();
+            }
+            //Update Graphics
+            gameField.UpdateDisplay();
         }
-        //Update Graphics
-        gameField.UpdateDisplay();
     }
 
     private PlayerAction ReadPlayerInput()
@@ -160,9 +164,10 @@ public class GameField
         }
     }
 
-    int[,] displayPixels = new int[10, 20];
+    int[,] displayPixels = new int[10, 25];
     List<Pixel> currentPiecePixels = new List<Pixel>();
     Pixel rotationPoint;
+    public bool isGameOver = false;
 
     public void Init()
     {
@@ -219,10 +224,10 @@ public class GameField
         }
         else
         {
-            bool isGameOver = false;
-            if (isGameOver)
+            if (IsGameOver())
             {
-                //GameOverEvent
+                RemoveOutOfBouncePixels(currentPiecePixels);
+                isGameOver = true;
             }
             else
             {
@@ -233,6 +238,31 @@ public class GameField
                 LoadNewPiece(GetRandomPiece());
             }
         }
+    }
+
+    private bool IsGameOver()
+    {
+        foreach (Pixel pixel in currentPiecePixels)
+        {
+            if (pixel.y > 19)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void RemoveOutOfBouncePixels(List<Pixel> pixelList)
+    {
+        List<Pixel> newList = new List<Pixel>();
+        foreach (Pixel pixel in pixelList)
+        {
+            if (pixel.y < 20)
+            {
+                newList.Add(pixel);
+            }
+        }
+        pixelList = newList;
     }
 
     private void RemoveCurrentPiece()
@@ -458,6 +488,24 @@ public class GameField
             default:
                 break;
         }
+        bool collision = false;
+        do
+        {
+            collision = false;
+            foreach (Pixel pixel in currentPiecePixels)
+            {
+                if (displayPixels[pixel.x, pixel.y] != 0)
+                {
+                    collision = true;
+                    break;
+                }
+            }
+            if (collision)
+            {
+                TransformPixelList(0, 1, currentPiecePixels);
+                rotationPoint.y += 1;
+            }
+        } while (collision);
     }
 
     private bool MovementAllowed(PlayerAction desiredAction)
