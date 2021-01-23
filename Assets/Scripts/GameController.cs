@@ -978,7 +978,12 @@ public class GameField
             TransformPixelList(0, 1, currentPiecePixels);
             rotationPoint.y += 1;
         }
-        Debug.Log("Check Done");
+        else
+        {
+            Debug.Log("Check Done");
+            return;
+        }
+        BoundryCorrection();
     }
 
     /// Return new Pixel based on given X/Y Offset
