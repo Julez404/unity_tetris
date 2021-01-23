@@ -79,6 +79,10 @@ public class GameController : MonoBehaviour
         {
             selectedAction = PlayerAction.rotateRight;
         }
+        else if (Input.GetKeyDown("space"))
+        {
+            selectedAction = PlayerAction.store;
+        }
         return selectedAction;
     }
 
