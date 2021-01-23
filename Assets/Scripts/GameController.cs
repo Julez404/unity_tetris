@@ -449,6 +449,7 @@ public class GameField
                 currentPiecePixels.Add(new Pixel(4, 19, piece));
                 currentPiecePixels.Add(new Pixel(5, 18, piece));
                 currentPiecePixels.Add(new Pixel(4, 18, piece));
+                rotationPoint = new Pixel(5, 19);
                 break;
             case GamePiece.t:
                 currentPiecePixels.Add(new Pixel(5, 19, piece));
