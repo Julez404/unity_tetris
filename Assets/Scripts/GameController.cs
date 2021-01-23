@@ -21,17 +21,22 @@ public class GameController : MonoBehaviour
 {
     private GameField gameField = new GameField();
     public PixelController pixelController;
-    private float lastTime;
+    PlayerAction currentPlayerAction = PlayerAction.none;
+    PlayerAction lastPlayerAction = PlayerAction.none;
 
-    private float newTime;
+    // Handling player Input
+    bool isSameActionAsBefore = false;
+    ActionTimeCounter inputDelayTimer = new ActionTimeCounter(0.1f);
+    ActionTimeCounter inputCycleTimer = new ActionTimeCounter(0.05f);
+
+    // Handling game speed
+    ActionTimeCounter pushDownTimer = new ActionTimeCounter(1f);
 
     // Start is called before the first frame update
     void Start()
     {
         gameField.SetPixelController(pixelController);
         gameField.Init();
-        //InvokeRepeating("Cycle", 2.0f, 1.0f);
-        newTime = Time.deltaTime;
     }
 
     // Update is called once per frame
@@ -39,18 +44,49 @@ public class GameController : MonoBehaviour
     {
         if (!gameField.isGameOver)
         {
+            currentPlayerAction = ReadPlayerInput();
 
-            PlayerAction playerAction = ReadPlayerInput();
-            gameField.HandlePlayerInput(playerAction);
-
-            newTime += Time.deltaTime;
-            if (newTime > 1)
+            if (currentPlayerAction != lastPlayerAction)
             {
-                newTime = 0;
+                isSameActionAsBefore = false;
+            }
+
+            //Increase timers.
+            pushDownTimer.AddTime(Time.deltaTime);
+            inputDelayTimer.AddTime(Time.deltaTime);
+            inputCycleTimer.AddTime(Time.deltaTime);
+
+
+            if (isSameActionAsBefore)
+            {
+                if (inputDelayTimer.IsReached())
+                {
+                    if (inputCycleTimer.IsReached())
+                    {
+                        inputCycleTimer.Clear();
+                        gameField.HandlePlayerInput(currentPlayerAction);
+                    }
+                }
+                else
+                {
+                    inputCycleTimer.Clear();
+                }
+            }
+            else
+            {
+                gameField.HandlePlayerInput(currentPlayerAction);
+                inputDelayTimer.Clear();
+                isSameActionAsBefore = true;
+            }
+
+            if (pushDownTimer.IsReached())
+            {
+                pushDownTimer.Clear();
                 gameField.Push();
             }
-            //Update Graphics
+
             gameField.UpdateDisplay();
+            lastPlayerAction = currentPlayerAction;
         }
         else
         {
@@ -63,15 +99,15 @@ public class GameController : MonoBehaviour
         PlayerAction selectedAction = new PlayerAction();
         selectedAction = PlayerAction.none;
 
-        if (Input.GetKeyDown("a"))
+        if (Input.GetKey("a"))
         {
             selectedAction = PlayerAction.moveLeft;
         }
-        else if (Input.GetKeyDown("d"))
+        else if (Input.GetKey("d"))
         {
             selectedAction = PlayerAction.moveRight;
         }
-        else if (Input.GetKeyDown("s"))
+        else if (Input.GetKey("s"))
         {
             selectedAction = PlayerAction.moveDown;
         }
@@ -92,6 +128,37 @@ public class GameController : MonoBehaviour
             selectedAction = PlayerAction.store;
         }
         return selectedAction;
+    }
+
+    private class ActionTimeCounter
+    {
+        float timer;
+        float threshold = 0;
+
+        public ActionTimeCounter(float threshold)
+        {
+            this.threshold = threshold;
+        }
+
+        public void AddTime(float time)
+        {
+            timer += time;
+        }
+
+        public void SetThreshold(float time)
+        {
+            threshold = time;
+        }
+
+        public bool IsReached()
+        {
+            return timer > threshold;
+        }
+
+        public void Clear()
+        {
+            timer = 0f;
+        }
     }
 }
 
