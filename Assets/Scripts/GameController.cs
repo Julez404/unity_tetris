@@ -23,6 +23,7 @@ public class GameController : MonoBehaviour
     private GameField gameField = new GameField();
 
     public Text storedPieceText;
+    public Text scoreText;
 
     public PixelController pixelController;
     PlayerAction currentPlayerAction = PlayerAction.none;
@@ -107,7 +108,11 @@ public class GameController : MonoBehaviour
 
     private void UpdateUI()
     {
+        //Hold
         storedPieceText.text = gameField.storedPiece.ToString();
+
+        //Score
+        scoreText.text = gameField.score.ToString();
     }
 
     private PlayerAction ReadPlayerInput()
@@ -183,7 +188,7 @@ public class GameField
 {
     PixelController pixelController;
 
-    int score = 0;
+    public int score = 0;
 
     public void SetPixelController(PixelController controller)
     {
