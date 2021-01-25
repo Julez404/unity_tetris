@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using System; //random function
 
 
@@ -20,6 +21,9 @@ public enum PlayerAction
 public class GameController : MonoBehaviour
 {
     private GameField gameField = new GameField();
+
+    public Text storedPieceText;
+
     public PixelController pixelController;
     PlayerAction currentPlayerAction = PlayerAction.none;
     PlayerAction lastPlayerAction = PlayerAction.none;
@@ -87,12 +91,23 @@ public class GameController : MonoBehaviour
 
             gameField.CalculatePreviewPixels();
             gameField.UpdateDisplay();
+
             lastPlayerAction = currentPlayerAction;
         }
         else
         {
             gameField.SetGameOverScreen();
         }
+    }
+
+    void FixedUpdate()
+    {
+        UpdateUI();
+    }
+
+    private void UpdateUI()
+    {
+        storedPieceText.text = gameField.storedPiece.ToString();
     }
 
     private PlayerAction ReadPlayerInput()
@@ -187,12 +202,12 @@ public class GameField
     public enum GamePiece
     {
         none,
-        longI,
+        i,
         s,
-        mirroredS,
+        z,
         l,
-        mirroredL,
-        square,
+        j,
+        o,
         t
     }
 
@@ -238,6 +253,8 @@ public class GameField
     int[,] displayPixels = new int[10, 25];
     List<Pixel> currentPiecePixels = new List<Pixel>();
     List<Pixel> currentPiecePreview = new List<Pixel>();
+    public GamePiece storedPiece = GamePiece.none;
+    bool holdPieceWasStoredInCurrentRound = false;
 
     Pixel rotationPoint;
     public bool isGameOver = false;
@@ -309,6 +326,7 @@ public class GameField
                 RemoveCurrentPiece();
                 HandleFullLineDetection();
                 LoadNewPiece(GetRandomPiece());
+                holdPieceWasStoredInCurrentRound = false;
             }
         }
     }
@@ -498,6 +516,9 @@ public class GameField
             case PlayerAction.drop:
                 Drop();
                 break;
+            case PlayerAction.store:
+                StorePiece();
+                break;
             default:
                 break;
         }
@@ -513,6 +534,21 @@ public class GameField
         return newPiece;
     }
 
+    private void StorePiece()
+    {
+        if (!holdPieceWasStoredInCurrentRound)
+        {
+            GamePiece newPiece = storedPiece;
+            if (newPiece == GamePiece.none)
+            {
+                newPiece = GetRandomPiece();
+            }
+            storedPiece = currentPiecePixels[0].gamePiece;
+            holdPieceWasStoredInCurrentRound = true;
+            RemovePixelsFromDisplay(currentPiecePixels);
+            LoadNewPiece(newPiece);
+        }
+    }
 
     private void LoadNewPiece(GamePiece piece)
     {
@@ -520,14 +556,14 @@ public class GameField
 
         switch (piece)
         {
-            case GamePiece.longI:
+            case GamePiece.i:
                 currentPiecePixels.Add(new Pixel(5, 19, piece));
                 currentPiecePixels.Add(new Pixel(5, 18, piece));
                 currentPiecePixels.Add(new Pixel(5, 17, piece));
                 currentPiecePixels.Add(new Pixel(5, 16, piece));
                 rotationPoint = new Pixel(5, 17);
                 break;
-            case GamePiece.square:
+            case GamePiece.o:
                 currentPiecePixels.Add(new Pixel(5, 19, piece));
                 currentPiecePixels.Add(new Pixel(4, 19, piece));
                 currentPiecePixels.Add(new Pixel(5, 18, piece));
@@ -548,7 +584,7 @@ public class GameField
                 currentPiecePixels.Add(new Pixel(6, 17, piece));
                 rotationPoint = new Pixel(5, 18);
                 break;
-            case GamePiece.mirroredL:
+            case GamePiece.j:
                 currentPiecePixels.Add(new Pixel(5, 19, piece));
                 currentPiecePixels.Add(new Pixel(5, 18, piece));
                 currentPiecePixels.Add(new Pixel(5, 17, piece));
@@ -562,7 +598,7 @@ public class GameField
                 currentPiecePixels.Add(new Pixel(4, 18, piece));
                 rotationPoint = new Pixel(5, 18);
                 break;
-            case GamePiece.mirroredS:
+            case GamePiece.z:
                 currentPiecePixels.Add(new Pixel(4, 19, piece));
                 currentPiecePixels.Add(new Pixel(5, 19, piece));
                 currentPiecePixels.Add(new Pixel(5, 18, piece));
@@ -636,17 +672,17 @@ public class GameField
                 return Color.grey;
             case GamePiece.l:
                 return Color.blue;
-            case GamePiece.longI:
+            case GamePiece.i:
                 return Color.cyan;
-            case GamePiece.mirroredL:
+            case GamePiece.j:
                 return new Color(1, 0.65f, 0, 1);
             case GamePiece.t:
                 return new Color(0.5f, 0, 1, 1);
-            case GamePiece.mirroredS:
+            case GamePiece.z:
                 return Color.green;
             case GamePiece.s:
                 return Color.red;
-            case GamePiece.square:
+            case GamePiece.o:
                 return Color.yellow;
             default:
                 return Color.white;
@@ -725,44 +761,44 @@ public class GameField
         Pixel oldRotationPoint = rotationPoint;
 
         GamePiece piece = currentPiecePixels[0].gamePiece;
-        if (piece == GamePiece.square)
+        if (piece == GamePiece.o)
         {
             // Piece does not change on rotation
             return;
         }
-        else if (piece == GamePiece.longI)
+        else if (piece == GamePiece.i)
         {
             if (AllAboveRotationPoint(currentPiecePixels))
             {
                 // 3
-                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 2, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y - 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 2, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y - 1, GamePiece.i));
             }
             else if (AllRightOfRotationPoint(currentPiecePixels))
             {
                 // 4
-                bufferList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y, GamePiece.i));
             }
             else if (TwoAreAboveOfRotationPoint(currentPiecePixels))
             {
                 // 2
-                bufferList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y + 1, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y + 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y + 1, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y + 1, GamePiece.i));
             }
             else if (TwoAreRightOfRotationPoint(currentPiecePixels))
             {
                 // 1
-                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 2, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y - 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 2, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y - 1, GamePiece.i));
             }
         }
         else
@@ -924,44 +960,44 @@ public class GameField
 
         GamePiece piece = currentPiecePixels[0].gamePiece;
 
-        if (piece == GamePiece.square)
+        if (piece == GamePiece.o)
         {
             // Piece does not change on rotation
             return;
         }
-        else if (piece == GamePiece.longI)
+        else if (piece == GamePiece.i)
         {
             if (AllAboveRotationPoint(currentPiecePixels))
             {
                 // 1
-                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 2, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y - 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 2, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y - 1, GamePiece.i));
             }
             else if (AllRightOfRotationPoint(currentPiecePixels))
             {
                 // 2
-                bufferList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y + 1, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y + 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y + 1, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y + 1, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y + 1, GamePiece.i));
             }
             else if (TwoAreAboveOfRotationPoint(currentPiecePixels))
             {
                 // 4
-                bufferList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x - 1, rotationPoint.y, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x, rotationPoint.y, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x + 2, rotationPoint.y, GamePiece.i));
             }
             else if (TwoAreRightOfRotationPoint(currentPiecePixels))
             {
                 // 3
-                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 2, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.longI));
-                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y - 1, GamePiece.longI));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 2, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y + 1, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y, GamePiece.i));
+                bufferList.Add(new Pixel(rotationPoint.x + 1, rotationPoint.y - 1, GamePiece.i));
             }
         }
         else
@@ -1258,7 +1294,7 @@ public class GameField
     public void CalculatePreviewPixels()
     {
         currentPiecePreview = new List<Pixel>();
-        foreach(Pixel pixel in currentPiecePixels)
+        foreach (Pixel pixel in currentPiecePixels)
         {
             currentPiecePreview.Add(new Pixel(pixel));
         }
