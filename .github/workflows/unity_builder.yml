@@ -1,0 +1,11 @@
+- uses: webbertakken/unity-builder@<version>
+  env:
+    UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+  with:
+    projectPath: .
+    unityVersion: 2019.4.18f1
+    targetPlatform: WebGL
+- uses: actions/upload-artifact@v1
+  with:
+    name: Build
+    path: build
