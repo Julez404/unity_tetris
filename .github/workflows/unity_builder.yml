@@ -14,7 +14,7 @@ jobs:
       env:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
       with:
-        unityVersion: 2019.3.14f1
+        unityVersion: 2019.2.11f1
         targetPlatform: WebGL
     - name: Store Build
       uses: actions/upload-artifact@v1
