@@ -1,28 +1,31 @@
-name: Build-Project
+name: Main Actions
 on: [push]
 jobs:
-  build:
-    name: build
+  setup:
     runs-on: ubuntu-latest
     steps:
-          # Checkout
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    # Cache
     - uses: actions/cache@v1.1.0
       with:
         path: Library
         key: Library
 
-    - name: Unity - Test runner
-      # You may pin to the exact commit or the version.
-      # uses: game-ci/unity-test-runner@e1be8325cd37b6e496c5b8949d9177a5f4c7766a
-      uses: game-ci/unity-test-runner@v2.0-alpha-2
+  test:
+    needs: setup
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: game-ci/unity-test-runner@v2.0-alpha-2
       with:
-        # Version of unity to use for testing the project. Use "auto" to get from your ProjectSettings/ProjectVersion.txt
         unityVersion: 2020.1.13f1
-   
+
+  build:
+    needs: test
+    name: Build-Project
+    runs-on: ubuntu-latest
+    steps:
     - name: Build Project
       uses: webbertakken/unity-builder@v1.5
       env:
@@ -30,6 +33,11 @@ jobs:
       with:
         unityVersion: 2020.1.13f1
         targetPlatform: WebGL
+
+  store:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
     - name: Store Build
       uses: actions/upload-artifact@v1
       with:
