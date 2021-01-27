@@ -1,20 +1,20 @@
 name: Main Actions
 on: [push]
 jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-    - uses: game-ci/unity-test-runner@v2.0-alpha-2
-      env:
-        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-      with:
-        unityVersion: 2020.1.13f1
+#  test:
+#    name: Test
+#    runs-on: ubuntu-latest
+#    steps:
+#    - name: Checkout repository
+#      uses: actions/checkout@v2
+#    - uses: game-ci/unity-test-runner@v2.0-alpha-2
+#      env:
+#        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+#      with:
+#        unityVersion: 2020.1.13f1
 
   build:
-    needs: test
+#    needs: test
     name: Build
     runs-on: ubuntu-latest
     steps:
