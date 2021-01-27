@@ -1,20 +1,12 @@
 name: Main Actions
 on: [push]
 jobs:
-  setup:
-    name: Setup
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
-
-
-
-  test:
-    needs: setup
-    name: Tests
-    runs-on: ubuntu-latest
-    steps:
     - uses: game-ci/unity-test-runner@v2.0-alpha-2
       env:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -26,6 +18,8 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
     - uses: actions/cache@v1.1.0
       with:
         path: Library
@@ -37,12 +31,6 @@ jobs:
       with:
         unityVersion: 2020.1.13f1
         targetPlatform: WebGL
-
-  store:
-    name: Store
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
     - name: Store Build
       uses: actions/upload-artifact@v1
       with:
