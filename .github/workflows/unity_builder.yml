@@ -2,15 +2,13 @@ name: Main Actions
 on: [push]
 jobs:
   setup:
+    name: Setup
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - uses: actions/cache@v1.1.0
-      with:
-        path: Library
-        key: Library
+
 
   test:
     needs: setup
@@ -18,14 +16,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: game-ci/unity-test-runner@v2.0-alpha-2
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
       with:
         unityVersion: 2020.1.13f1
 
   build:
     needs: test
-    name: Build-Project
+    name: Build
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/cache@v1.1.0
+      with:
+        path: Library
+        key: Library
     - name: Build Project
       uses: webbertakken/unity-builder@v1.5
       env:
@@ -35,6 +39,7 @@ jobs:
         targetPlatform: WebGL
 
   store:
+    name: Store
     needs: build
     runs-on: ubuntu-latest
     steps:
