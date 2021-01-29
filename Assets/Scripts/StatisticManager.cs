@@ -51,10 +51,7 @@ namespace TetrisGame
             }
             else
             {
-                Debug.Log("Tetris clears = " + tetrisClears);
-                Debug.Log("Line clears= " + clearedLines);
-                Debug.Log("RATE= " + tetrisClears / clearedLines);
-                return tetrisClears / clearedLines;
+                return 100 * tetrisClears / clearedLines;
             }
         }
 
