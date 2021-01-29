@@ -1,0 +1,38 @@
+name: Main Actions
+on: [push]
+jobs:
+#  test:
+#    name: Test
+#    runs-on: ubuntu-latest
+#    steps:
+#    - name: Checkout repository
+#      uses: actions/checkout@v2
+#    - uses: game-ci/unity-test-runner@v2.0-alpha-2
+#      env:
+#        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+#      with:
+#        unityVersion: 2020.1.13f1
+
+  build:
+#    needs: test
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - uses: actions/cache@v1.1.0
+      with:
+        path: Library
+        key: Library
+    - name: Build Project
+      uses: webbertakken/unity-builder@v1.5
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      with:
+        unityVersion: 2020.1.13f1
+        targetPlatform: WebGL
+    - name: Store Build
+      uses: actions/upload-artifact@v1
+      with:
+        name: Build
+        path: build
