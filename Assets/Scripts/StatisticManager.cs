@@ -3,26 +3,81 @@ using System.Collections.Generic;
 using UnityEngine;
 //using GamePiece;
 
-
-public class StatisticManager : MonoBehaviour
+namespace TetrisGame
 {
+    public class StatisticManager
+    {
+        // Line clears in total
+        int clearedLines = 0;
+        // Lines cleared with Tetris
+        int tetrisClears = 0;
+        // Lines cleared without tetris, since last tetris.
+        int burnCount = 0;
+        // List of all pieces in that game.
+        List<GamePiece> gamePieceList = new List<GamePiece>();
 
-//ToDo
-/*
-Tetris Rate (percentage of Lines cleared with tetris)
-I-Piece counter
-Lines cleared
-Drought counter (number of pieces since last I-piece)
-Burn counter (number of lines cleared without tetris since last tetris)
-*/
+        public StatisticManager(){}
 
+        //---------------
+        // Incomming Data
+        //---------------
+        public void AddPieceToStatistic(GamePiece newPiece)
+        {
+            gamePieceList.Add(newPiece);
+        }
 
+        public void AddLineClear(int linecount)
+        {
+            clearedLines += linecount;
+            if (linecount == 4)
+            {
+                tetrisClears += 4;
+                burnCount = 0;
+            }
+            else
+            {
+                burnCount +=4;
+            }
+        }
 
-/*
-public void AddPieceToStatistic(GamePiece)
-{
+        //---------------
+        // Outgoing Data
+        //---------------
+        public float GetTetrisRate()
+        {
+            return tetrisClears / clearedLines;
+        }
 
-}
-*/
+        public float GetIPieceCount()
+        {
+            int i_count = 0;
+            foreach (var piece in gamePieceList)
+            {
+                if (piece == GamePiece.i)
+                {
+                    i_count++;
+                }
+            }
+            return i_count;
+        }
 
+        public int GetClearedLines()
+        {
+            return clearedLines;
+        }
+
+        public int GetCountSinceLastI()
+        {
+            int count = 0;
+            foreach (var piece in gamePieceList)
+            {
+                count++;
+                if (piece == GamePiece.i)
+                {
+                    count = 0;
+                }
+            }
+            return count;
+        }
+    }
 }
