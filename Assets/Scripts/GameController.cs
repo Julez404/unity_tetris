@@ -23,6 +23,12 @@ namespace TetrisGame
 
         public Text storedPieceText;
         public Text scoreText;
+        public Text lineCount;
+        public Text tetrisRate;
+        public Text iCount;
+        public Text drought;
+        public Text burnCount;
+
 
         public PixelController pixelController;
         PlayerAction currentPlayerAction = PlayerAction.none;
@@ -91,6 +97,7 @@ namespace TetrisGame
 
                 gameField.CalculatePreviewPixels();
                 gameField.UpdateDisplay();
+                UpdateStatView(gameField.GetGameStatistics());
 
                 lastPlayerAction = currentPlayerAction;
             }
@@ -179,6 +186,15 @@ namespace TetrisGame
             {
                 timer = 0f;
             }
+        }
+
+        private void UpdateStatView(StatisticManager stats)
+        {
+            lineCount.text = stats.GetClearedLines().ToString();
+            tetrisRate.text = stats.GetTetrisRate().ToString();
+            iCount.text = stats.GetIPieceCount().ToString();
+            drought.text = stats.GetCountSinceLastI().ToString();
+            burnCount.text = stats.GetBurnCount().ToString();
         }
     }
 }

@@ -16,7 +16,7 @@ namespace TetrisGame
         // List of all pieces in that game.
         List<GamePiece> gamePieceList = new List<GamePiece>();
 
-        public StatisticManager(){}
+        public StatisticManager() { }
 
         //---------------
         // Incomming Data
@@ -36,7 +36,7 @@ namespace TetrisGame
             }
             else
             {
-                burnCount +=4;
+                burnCount += linecount;
             }
         }
 
@@ -45,7 +45,17 @@ namespace TetrisGame
         //---------------
         public float GetTetrisRate()
         {
-            return tetrisClears / clearedLines;
+            if (clearedLines == 0)
+            {
+                return 100;
+            }
+            else
+            {
+                Debug.Log("Tetris clears = " + tetrisClears);
+                Debug.Log("Line clears= " + clearedLines);
+                Debug.Log("RATE= " + tetrisClears / clearedLines);
+                return tetrisClears / clearedLines;
+            }
         }
 
         public float GetIPieceCount()
@@ -78,6 +88,11 @@ namespace TetrisGame
                 }
             }
             return count;
+        }
+
+        public int GetBurnCount()
+        {
+            return burnCount;
         }
     }
 }
