@@ -257,7 +257,6 @@ namespace TetrisGame
             score += linecount;
         }
 
-
         private void RemovePixelsFromDisplay(List<Pixel> pixels)
         {
             foreach (Pixel pixel in pixels)
@@ -299,7 +298,6 @@ namespace TetrisGame
             }
             return true;
         }
-
 
         public void HandlePlayerInput(PlayerAction action)
         {
@@ -1069,7 +1067,6 @@ namespace TetrisGame
             }
             return returnList;
         }
-
 
         private int GetSmallestDistanceToGround(List<Pixel> pixelList)
         {
